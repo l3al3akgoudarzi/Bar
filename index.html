@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>اعلام بار</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap">
+<style>
+:root{
+  --bg:#f3f1ec; --card:#ffffff; --ink:#1f2328; --muted:#6b6f76;
+  --line:#dedad2; --accent:#c4621d; --accent-ink:#ffffff; --ok:#2f7d4f;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#17181a; --card:#212327; --ink:#ecebe8; --muted:#9a9ea5;
+    --line:#33363b; --accent:#e07a32; --accent-ink:#1a1a1a; --ok:#57b27e; color-scheme:dark; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Vazirmatn",Tahoma,sans-serif;font-size:16px;line-height:1.8}
+main{max-width:520px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:16px}
+h1{font-size:1.4rem;font-weight:800;margin:0}
+.sub{color:var(--muted);font-size:.9rem;margin:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.label{font-size:.8rem;color:var(--muted);margin-bottom:6px}
+.msg{white-space:pre-wrap;font-weight:600}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:12px 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+.who{min-width:0}
+.name{font-weight:600}
+.num{direction:ltr;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums;font-size:.9rem}
+.btn{display:inline-block;text-decoration:none;border:0;border-radius:10px;
+  padding:10px 18px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;
+  background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.done{background:transparent;color:var(--ok);border:1px solid var(--ok)}
+.btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.tools{display:flex;gap:10px;flex-wrap:wrap}
+.empty{color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>اعلام بار</h1>
+    <p class="sub" id="count"></p>
+  </header>
+
+  <section class="card" id="msgCard" hidden>
+    <div class="label">متن پیامک</div>
+    <div class="msg" id="msg"></div>
+  </section>
+
+  <section class="card" id="list" hidden></section>
+
+  <div class="tools" id="tools" hidden>
+    <button class="btn ghost" id="copy" type="button">کپی متن</button>
+  </div>
+
+  <section class="card empty" id="empty" hidden>
+    این صفحه با لینکی که Claude در تلگرام می‌فرستد پر می‌شود. لینک بدون اطلاعات بار باز شده است.
+  </section>
+</main>
+<script>
+(function(){
+  var p = new URLSearchParams(location.search);
+  var text = p.get("t") || "";
+  var raw = p.get("n") || "";
+  // n format: 09121111111:نام,09122222222:نام
+  var people = raw.split(",").map(function(s){
+    var i = s.indexOf(":");
+    var num = (i<0 ? s : s.slice(0,i)).replace(/[^0-9+]/g,"");
+    var name = i<0 ? "" : s.slice(i+1);
+    return {num:num,name:name};
+  }).filter(function(x){return x.num.length>=10});
+
+  if(!text || !people.length){ document.getElementById("empty").hidden=false; return; }
+
+  document.getElementById("msg").textContent = text;
+  document.getElementById("msgCard").hidden = false;
+  document.getElementById("tools").hidden = false;
+  document.getElementById("count").textContent = people.length + " راننده — روی هر دکمه بزن، بعد در برنامه‌ی پیامک ارسال را بزن.";
+
+  var key = "sent:" + text;
+  var sent = {};
+  try{ sent = JSON.parse(localStorage.getItem(key)||"{}"); }catch(e){}
+
+  var list = document.getElementById("list");
+  people.forEach(function(x){
+    var row = document.createElement("div"); row.className="row";
+    var who = document.createElement("div"); who.className="who";
+    var nm = document.createElement("div"); nm.className="name"; nm.textContent = x.name || "راننده";
+    var nu = document.createElement("div"); nu.className="num"; nu.textContent = x.num;
+    who.appendChild(nm); who.appendChild(nu);
+    var a = document.createElement("a");
+    a.href = "sms:" + x.num + "?body=" + encodeURIComponent(text);
+    a.className = "btn" + (sent[x.num] ? " done" : "");
+    a.textContent = sent[x.num] ? "باز شد ✓" : "ارسال";
+    a.addEventListener("click", function(){
+      sent[x.num]=1;
+      try{ localStorage.setItem(key, JSON.stringify(sent)); }catch(e){}
+      a.className="btn done"; a.textContent="باز شد ✓";
+    });
+    row.appendChild(who); row.appendChild(a); list.appendChild(row);
+  });
+  list.hidden = false;
+
+  document.getElementById("copy").addEventListener("click", function(){
+    var b = this;
+    navigator.clipboard.writeText(text).then(function(){ b.textContent="کپی شد"; })
+      .catch(function(){ b.textContent="کپی نشد"; });
+  });
+})();
+</script>
+</body>
+</html>
