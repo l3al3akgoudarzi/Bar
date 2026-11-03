@@ -40,6 +40,8 @@ h1{font-size:1.4rem;font-weight:800;margin:0}
 .btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .tools{display:flex;gap:10px;flex-wrap:wrap}
 .empty{color:var(--muted)}
+.all{display:flex;flex-direction:column;gap:8px;align-items:stretch;text-align:center}
+.btn.big{padding:14px 18px;font-size:1.1rem}
 </style>
 </head>
 <body>
@@ -55,6 +57,11 @@ h1{font-size:1.4rem;font-weight:800;margin:0}
   </section>
 
   <section class="card" id="list" hidden></section>
+
+  <section class="card all" id="allCard" hidden>
+    <a class="btn big" id="sendAll" href="#">ارسال به همه</a>
+    <p class="sub">یک بار بزن؛ برنامه‌ی پیامک با همه‌ی گیرنده‌ها باز می‌شه، بعد ارسال رو بزن.</p>
+  </section>
 
   <div class="tools" id="tools" hidden>
     <button class="btn ghost" id="copy" type="button">کپی متن</button>
@@ -107,6 +114,15 @@ h1{font-size:1.4rem;font-weight:800;margin:0}
     row.appendChild(who); row.appendChild(a); list.appendChild(row);
   });
   list.hidden = false;
+
+  var all = document.getElementById("sendAll");
+  all.href = "sms:" + people.map(function(x){return x.num;}).join(",") + "?body=" + encodeURIComponent(text);
+  all.addEventListener("click", function(){
+    people.forEach(function(x){ sent[x.num]=1; });
+    try{ localStorage.setItem(key, JSON.stringify(sent)); }catch(e){}
+    all.textContent = "باز شد ✓ — در برنامه‌ی پیامک ارسال رو بزن";
+  });
+  document.getElementById("allCard").hidden = false;
 
   document.getElementById("copy").addEventListener("click", function(){
     var b = this;
